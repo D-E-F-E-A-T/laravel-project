@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Post;
 use DB;
+use Auth;
 class PostsController extends Controller
 {
     /**
@@ -32,7 +33,7 @@ class PostsController extends Controller
         // the above method takes only first 3 entries
 
         // adding pagination 
-        $posts = Post::orderBy('created_at','desc')->paginate(10);//adds pagination after 15 entries
+        $posts = Post::orderBy('created_at','desc')->paginate(6);//adds pagination after 15 entries
         return view('posts.index')->with('posts',$posts );
         // $posts = Post::all();
 
@@ -68,6 +69,7 @@ class PostsController extends Controller
         $post = new Post();
         $post->title = $request->input('title');
         $post->body = $request->input('body');
+        $post->user_id = auth()->user()->id;
         $post->save();
         return redirect('/posts')->with('success','Post created');
     }  
@@ -91,7 +93,8 @@ class PostsController extends Controller
      */
     public function edit($id)
     {
-
+        $post = Post::find($id);
+        return view('posts.edit')->with('post',$post);    
     }
 
     /**
@@ -103,7 +106,16 @@ class PostsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $this->validate($request,[
+            'title'=>'required',
+            'body'=>'required'
+        ]);
+        // create post
+        $post = Post::find($id);
+        $post->title = $request->input('title');
+        $post->body = $request->input('body');
+        $post->save();
+        return redirect('/posts')->with('success','Post Updated');
     }
 
     /**
@@ -114,6 +126,13 @@ class PostsController extends Controller
      */
     public function destroy($id)
     {
-        //
+       $post = Post::find($id);
+       $post->delete();
+       if(Auth::check()){
+        return redirect('/dashboard')->with('success','Post deleted');
+       }
+       else{
+        return redirect('/posts')->with('success','Post deleted');
+       }
     }
 }
