@@ -3,11 +3,21 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+Use Illuminate\Support\Facades\Storage;
 use App\Post;
 use DB;
 use Auth;
 class PostsController extends Controller
 {
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('auth',['except'=>['index',"show"]]);
+    }
     /**
      * Display a listing of the resource.
      *
@@ -63,13 +73,32 @@ class PostsController extends Controller
     {
         $this->validate($request,[
             'title'=>'required',
-            'body'=>'required'
+            'body'=>'required',
+            'cover_image'=>'image|nullable|max:1999'
         ]);
+
+        // handle file uploads
+        if($request->hasFile('cover_image')){
+            // get filename with the extension
+            $filenameWithExt = $request->file('cover_image')->getClientOriginalName();
+            // get just filename
+            $filename = pathinfo($filenameWithExt,PATHINFO_FILENAME);
+            // get just extension
+            $extension = $request->file('cover_image')->getClientOriginalExtension();
+
+            // filename to store
+            $fileNameToStore = $filename . '_' . time() . '.' .$extension;
+            // upload image
+            $path = $request->file('cover_image')->storeAs('public/cover_images',$fileNameToStore);
+        }else{
+            $fileNameToStore ='noimage.jpg';
+        }
         // create post
         $post = new Post();
         $post->title = $request->input('title');
         $post->body = $request->input('body');
         $post->user_id = auth()->user()->id;
+        $post->cover_image = $fileNameToStore;
         $post->save();
         return redirect('/posts')->with('success','Post created');
     }  
@@ -93,8 +122,13 @@ class PostsController extends Controller
      */
     public function edit($id)
     {
+
         $post = Post::find($id);
-        return view('posts.edit')->with('post',$post);    
+        // check for user correct user
+        if(auth()->user()->id !== $post->user_id){
+            return redirect('/posts')->with('error','Unauthorized page.');
+        }
+        return view('posts.edit')->with('post',$post);
     }
 
     /**
@@ -110,10 +144,26 @@ class PostsController extends Controller
             'title'=>'required',
             'body'=>'required'
         ]);
+        if($request->hasFile('cover_image')){
+            // get filename with the extension
+            $filenameWithExt = $request->file('cover_image')->getClientOriginalName();
+            // get just filename
+            $filename = pathinfo($filenameWithExt,PATHINFO_FILENAME);
+            // get just extension
+            $extension = $request->file('cover_image')->getClientOriginalExtension();
+
+            // filename to store
+            $fileNameToStore = $filename . '_' . time() . '.' .$extension;
+            // upload image
+            $path = $request->file('cover_image')->storeAs('public/cover_images',$fileNameToStore);
+        }
         // create post
         $post = Post::find($id);
         $post->title = $request->input('title');
         $post->body = $request->input('body');
+        if($request->hasFile('cover_image')){
+            $post->cover_image = $fileNameToStore;
+        }
         $post->save();
         return redirect('/posts')->with('success','Post Updated');
     }
@@ -127,12 +177,13 @@ class PostsController extends Controller
     public function destroy($id)
     {
        $post = Post::find($id);
-       $post->delete();
-       if(Auth::check()){
-        return redirect('/dashboard')->with('success','Post deleted');
-       }
-       else{
-        return redirect('/posts')->with('success','Post deleted');
-       }
+       if(auth()->user()->id !== $post->user_id){
+            return redirect('/posts')->with('error','Unauthorized page.');
+        }
+        if($post->cover_image!== 'noimage.jpg'){
+            Storage::delete('public/cover_images/'.$post->cover_image);
+        }
+        $post->delete();
+        return redirect('/posts')->with('success','Post Remove');
     }
 }

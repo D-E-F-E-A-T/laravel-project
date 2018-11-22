@@ -14,20 +14,26 @@
                         </div>
                     @endif <a href="/posts/create" class="btn btn-primary">Create Post</a>
                     <h3 >Your Blog Posts</h3>
-                    <table class="table table-striped">
-                        <tr>
-                            <th>Title</th>
-                            <th></th>
-                            <th></th>
-                        </tr>
-                        @foreach ($posts as $post)
+                        @if (count($posts)>0)
+                        <table class="table table-striped">
                             <tr>
-                                <th>{{$post->title}}</th>
-                                <th><a href="/posts/{{$post->id}}/" class="btn btn-primary">View</a></th>
-                                <th><a href="/posts/{{$post->id}}/edit" class="btn btn-danger">Edit</a></th>
+                                <th>Title</th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
                             </tr>
-                        @endforeach
-                    </table>
+                            @foreach ($posts as $post)
+                                <tr>
+                                    <td>{{$post->title}}</td>
+                                    <td><a href="/posts/{{$post->id}}/" class="btn btn-primary">View</a></td>
+                                    <td><a href="/posts/{{$post->id}}/edit" class="btn btn-danger">Edit</a></td>
+                                    <td></td>
+                                </tr>
+                            @endforeach
+                        </table>
+                        @else
+                        <p>You have no posts</p>
+                        @endif
                 </div>
             </div>
         </div>
