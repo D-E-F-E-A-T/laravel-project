@@ -19,6 +19,7 @@
         "popper.js": "latest",
         "vue": "latest",
         "webpack": "latest",
-        "webpack-dev-server": "latest"
+        "webpack-dev-server": "latest",
+        "serialize-javascript": "latest"
     }
 }
